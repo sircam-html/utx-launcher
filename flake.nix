@@ -23,10 +23,13 @@
           inherit pname version src;
         };
 
-        launcher = pkgs.appimageTools.wrapType2 {
+        winePkg = pkgs.wineWow64Packages.staging;
+
+        unwrappedLauncher = pkgs.appimageTools.wrapType2 {
           inherit pname version src;
 
           extraPkgs = pkgs: with pkgs; [
+            # UI & Tauri dependencies
             libsecret
             libgpg-error
             libgcrypt
@@ -35,6 +38,20 @@
             libsoup_3
             openssl
             glib-networking
+            xdg-utils
+
+            # Game execution, Graphics (Vulkan/DXVK) & Audio
+            winePkg
+            winetricks
+            dxvk
+            vulkan-loader
+            vulkan-tools
+            mesa
+            libglvnd
+            libpulseaudio
+            alsa-lib
+            coreutils
+            bash
           ];
 
           extraInstallCommands = ''
@@ -47,6 +64,18 @@
             description = "UT4 Community Launcher for NetcodePlus";
             platforms = [ "x86_64-linux" ];
           };
+        };
+
+        launcher = pkgs.symlinkJoin {
+          name = "${pname}-${version}";
+          paths = [ unwrappedLauncher ];
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/${pname} \
+              --run 'mkdir -p "$HOME/.local/share/ut4-wine-runner/bin" "$HOME/.local/share/ut4-wine-prefix"' \
+              --run 'ln -sf ${winePkg}/bin/* "$HOME/.local/share/ut4-wine-runner/bin/"' \
+              --run 'export WINEPREFIX="''${WINEPREFIX:-$HOME/.local/share/ut4-wine-prefix}"'
+          '';
         };
       in
       {
