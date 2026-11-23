@@ -1,62 +1,30 @@
 # Nix Flake for UT4 Community Launcher (NetcodePlus)
 
-Nix flake that runs the official Linux build of the [UT4 Community Launcher](https://github.com) for **Unreal Tournament 4** on NixOS.
+Nix flake para ejecutar la build oficial de Linux del [UT4 Community Launcher](https://github.com) para **Unreal Tournament 4** en NixOS. Utiliza `appimageTools` para envolver el AppImage nativo y sus dependencias (WebKit, GTK, GPG) sin necesidad de Wine para el launcher.
 
-Unlike Windows-only launchers, upstream provides a native Linux AppImage. This flake fetches the official `UT4-Community-Launcher-x86_64.AppImage`, wraps it with `appimageTools` along with its required WebKit/GTK/GPG runtime libraries, and runs it natively without needing Wine for the launcher itself.
-
-## Run it
+## Ejecución
 
 ```bash
-nix run github:sircam-html/ut4-community-launcher
+nix run github:sircam-html/utx-launcher
 ```
 
-*(Replace `ut4-community-launcher` with your actual GitHub repository name if different.)*
+### Requisitos
 
-The same command works in `fish` and `bash`. No cloning required.
+- `x86_64-linux` con Flakes habilitados.
+- Instalación previa de **Unreal Tournament 4** (ejecutándose en un prefijo de Wine, Proton o Lutris).
 
-### Requirements
+### Primer uso y actualización
 
-- `x86_64-linux`.
-- Flakes enabled.
-- An internet connection on the first run.
-- An existing **Unreal Tournament 4** installation (running inside a Wine, Proton, or Lutris prefix on Linux).
+1. Ejecuta el comando y apunta el launcher a tu directorio de instalación de UT4 para mantener actualizados los plugins y paks.
+2. Para actualizar el launcher a una nueva versión de upstream, modifica `version` y el hash correspondiente en `flake.nix`.
 
-### First run
+## Instalación local
 
-Nix downloads the AppImage and its sandboxed runtime libraries, then opens the launcher window:
-
-1. Point the launcher to your Unreal Tournament 4 install directory.
-2. The launcher will automatically download and keep the **NetcodePlus plugin**, **content paks**, and optional **UT4AC** anti-cheat up to date.
-3. Press **Play** to launch UT4 through your Wine/Proton setup.
-
-### Updating the launcher
-
-Upstream publishes new Linux AppImage releases on GitHub. Since `/nix/store` is read-only, the launcher's built-in self-updater cannot overwrite the binary; instead, bump the flake:
-
-1. Change `version = "1.9.0";` and the release tag in `url` inside `flake.nix` to the new version.
-2. Update `hash` for the new AppImage. If you leave the old one, `nix run` fails and prints the expected `got: sha256-...` hash, or you can prefetch it directly:
-
-   ```bash
-   nix store prefetch-file https://github.com/releases/download/v<version>/UT4-Community-Launcher-x86_64.AppImage
-   ```
-
-## Package & Installation
-
-To build the wrapped package locally:
+Para compilarlo localmente o instalarlo en tu perfil:
 
 ```bash
-nix build github:sircam-html/ut4-community-launcher
-./result/bin/ut4-community-launcher
+nix build github:sircam-html/utx-launcher
+nix profile install github:sircam-html/utx-launcher
 ```
 
-To install it permanently into your user profile (including the `.desktop` entry):
-
-```bash
-nix profile install github:sircam-html/ut4-community-launcher
-```
-
-## Notes
-
-- **Native launcher, Wine game:** The launcher UI runs natively on Linux via `appimageTools.wrapType2`, while Unreal Tournament 4 itself runs as a Win64 binary inside your Wine/Proton prefix.
-- **Bundled runtime dependencies:** The wrapper explicitly injects `webkitgtk_4_1`, `gtk3`, `libsoup_3`, `glib-networking`, `openssl`, `libsecret`, `libgpg-error`, and `libgcrypt` into the FHS environment so the AppImage launches cleanly on NixOS.
-- **No telemetry:** Updates fetched by the launcher are cryptographically signed, and the app sends no telemetry.
+*Nota: La interfaz del launcher corre de forma nativa en Linux, mientras que Unreal Tournament 4 se ejecuta mediante Wine/Proton.*
