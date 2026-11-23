@@ -1,6 +1,6 @@
 # Nix Flake for UT4 Community Launcher (NetcodePlus)
 
-Nix flake that runs the official Linux build of the [UT4 Community Launcher](https://github.com/jmortley/netcodeplus-launcher) for **Unreal Tournament 4** on NixOS without Wine.
+Self-contained Nix flake that runs the official Linux AppImage of the [UT4 Community Launcher](https://github.com/jmortley/netcodeplus-launcher) for **Unreal Tournament 4** on NixOS with bundled Wine Staging, DXVK, and Vulkan dependencies—no Lutris or system-wide Wine setup required.
 
 ## Run it
 
@@ -8,8 +8,24 @@ Nix flake that runs the official Linux build of the [UT4 Community Launcher](htt
 nix run github:sircam-html/utx-launcher
 ```
 
-### Requirements & Usage
+## First-Time Setup
 
-- **Requirements**: `x86_64-linux` with flakes enabled, internet access, and an existing **Unreal Tournament 4** installation.
-- **First run**: Point the launcher to your UT4 install directory to update dependencies (NetcodePlus plugin, content paks, optional UT4AC) and press **Play**.
-- **Installation**: Build locally with `nix build github:sircam-html/utx-launcher` or install system-wide via `nix profile install github:sircam-html/utx-launcher`.
+1. **Configure the Wine Runner path**: On first launch, open **Settings** inside the launcher and set the Wine runner directory to:
+   ```text
+   ~/.local/share/ut4-wine-runner
+   ```
+   *(The flake automatically creates and updates this directory with symlinks to the bundled Wine binaries and initializes a writable Wine prefix at `~/.local/share/ut4-wine-prefix`.)*
+2. **Locate or install UT4**: Point the launcher to your existing **Unreal Tournament 4** installation directory (or let the launcher download and unpack the community game package for you).
+3. **Update & Play**: Let the launcher update the NetcodePlus plugin and press **Play**.
+
+## Requirements & Installation
+
+- **Requirements**: `x86_64-linux` with Nix flakes enabled, Vulkan-capable GPU drivers, and internet access.
+- **Local build**:
+  ```bash
+  nix build github:sircam-html/utx-launcher
+  ```
+- **Profile installation**:
+  ```bash
+  nix profile install github:sircam-html/utx-launcher
+  ```
