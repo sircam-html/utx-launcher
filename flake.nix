@@ -24,6 +24,7 @@
         };
 
         winePkg = pkgs.wineWow64Packages.staging;
+        dxvk = pkgs.dxvk;
 
         unwrappedLauncher = pkgs.appimageTools.wrapType2 {
           inherit pname version src;
@@ -70,11 +71,20 @@
           name = "${pname}-${version}";
           paths = [ unwrappedLauncher ];
           nativeBuildInputs = [ pkgs.makeWrapper ];
+          # The launcher asks Wine for native DXVK DLLs but never installs them, so we
+          # do it on first run. We also force NVIDIA GL/Vulkan: otherwise the FHS
+          # wrapper can pick Mesa llvmpipe (software) and the game crawls.
           postBuild = ''
             wrapProgram $out/bin/${pname} \
               --run 'mkdir -p "$HOME/.local/share/ut4-wine-runner/bin" "$HOME/.local/share/ut4-wine-prefix"' \
               --run 'ln -sf ${winePkg}/bin/* "$HOME/.local/share/ut4-wine-runner/bin/"' \
-              --run 'export WINEPREFIX="''${WINEPREFIX:-$HOME/.local/share/ut4-wine-prefix}"'
+              --run 'export WINEPREFIX="''${WINEPREFIX:-$HOME/.local/share/ut4-wine-prefix}"' \
+              --run 'if [ ! -f "$WINEPREFIX/.nix-dxvk-installed" ]; then mkdir -p "$WINEPREFIX/drive_c/windows/system32" "$WINEPREFIX/drive_c/windows/SysWOW64"; for dll in ${dxvk.dxvk64}/bin/*.dll; do f="$(basename "$dll")"; if [ -f "$WINEPREFIX/drive_c/windows/system32/$f" ] && [ ! -f "$WINEPREFIX/drive_c/windows/system32/$f.bak" ]; then mv "$WINEPREFIX/drive_c/windows/system32/$f" "$WINEPREFIX/drive_c/windows/system32/$f.bak"; fi; cp -f "$dll" "$WINEPREFIX/drive_c/windows/system32/$f"; done; for dll in ${dxvk.dxvk32}/bin/*.dll; do f="$(basename "$dll")"; if [ -f "$WINEPREFIX/drive_c/windows/SysWOW64/$f" ] && [ ! -f "$WINEPREFIX/drive_c/windows/SysWOW64/$f.bak" ]; then mv "$WINEPREFIX/drive_c/windows/SysWOW64/$f" "$WINEPREFIX/drive_c/windows/SysWOW64/$f.bak"; fi; cp -f "$dll" "$WINEPREFIX/drive_c/windows/SysWOW64/$f"; done; touch "$WINEPREFIX/.nix-dxvk-installed"; fi' \
+              --run 'export WINEDLLOVERRIDES="''${WINEDLLOVERRIDES:-d3d11,d3d10core,dxgi,d3d9=n,b}"' \
+              --run 'export __GLX_VENDOR_LIBRARY_NAME="''${__GLX_VENDOR_LIBRARY_NAME:-nvidia}"' \
+              --run 'export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES:-/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.json}"' \
+              --run 'export WINEFSYNC="''${WINEFSYNC:-1}"' \
+              --run 'export WINEDEBUG="''${WINEDEBUG:--all}"'
           '';
         };
       in
